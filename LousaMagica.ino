@@ -5,6 +5,12 @@
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
 
+// Conexões no NodeMCU/WeMos
+static const uint8_t tilt_pin = D0;
+// ADS1115 CLK: D1
+// ADS1115 SDA: D2
+// Potenciômetro Opacidade: A0
+
 // Configurações
 static const char ssid[] = "seu-ssid";
 static const char senha[] = "sua-senha";
@@ -42,6 +48,8 @@ void setup() {
   Serial.println();
   Serial.println();
   Serial.println("Iniciando Lousa Mágica");
+
+  pinMode(tilt_pin, INPUT);
 
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
@@ -82,13 +90,16 @@ void loop() {
     if (agora - ultimaAmostra > intervaloAmostra) {
       ultimaAmostra = agora;
 
+      bool tilt = digitalRead(tilt_pin);
       uint16_t X = readADC(0, 1023);
       uint16_t Y = readADC(1, 1023);
       uint16_t tam = readADC(2, 100);
       uint16_t sat = readADC(3, 255);
       int opa = map(analogRead(0), 0, 1023, 0, 255);
 
-      String dado = String(X) + " " + String(Y) + " " + String(tam) + " " + String(sat) + " " + String(opa);
+      String dado = String(tilt) + " " +
+                    String(X) + " " + String(Y) + " " +
+                    String(tam) + " " + String(sat) + " " + String(opa);
       webSocket.broadcastTXT(dado);
     }
   }
