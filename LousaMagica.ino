@@ -17,7 +17,7 @@ WebSocketsServer webSocket = WebSocketsServer(porta);
 // Pode ser necessário recalibrar conforme tensão máxima
 // aplicada nas portas analógicas.
 // Tensão máxima suportada: +/- 6.144V / resolução 1 bit: 0.1875mV
-static const int ads_max_valor = 3.31 / 0.1875 * 1000;
+static const int ads_max_valor = 3.30 / 0.1875 * 1000; 
 Adafruit_ADS1115 ads;
 
 uint64_t ultimaAmostra = 0;
@@ -71,6 +71,10 @@ void setup() {
   Serial.println("Aguardando conexões");
 }
 
+uint16_t readADC(uint8_t channel, uint16_t max_valor) {
+  return map(constrain(ads.readADC_SingleEnded(channel), 0, ads_max_valor), 0, ads_max_valor, 0, max_valor);
+}
+
 void loop() {
   webSocket.loop();
   if (conectado) {
@@ -78,11 +82,11 @@ void loop() {
     if (agora - ultimaAmostra > intervaloAmostra) {
       ultimaAmostra = agora;
 
-      int16_t X = map(ads.readADC_SingleEnded(0), 0, ads_max_valor, 0, 1023);
-      int16_t Y = map(ads.readADC_SingleEnded(1), 0, ads_max_valor, 0, 1023);
-      int16_t tam = map(ads.readADC_SingleEnded(2), 0, ads_max_valor, 0, 100);
-      int16_t sat = map(ads.readADC_SingleEnded(3), 0, ads_max_valor, 0, 255);
-      int16_t opa = map(analogRead(0), 0, 1023, 0, 255);
+      uint16_t X = readADC(0, 1023);
+      uint16_t Y = readADC(1, 1023);
+      uint16_t tam = readADC(2, 100);
+      uint16_t sat = readADC(3, 255);
+      int opa = map(analogRead(0), 0, 1023, 0, 255);
 
       String dado = String(X) + " " + String(Y) + " " + String(tam) + " " + String(sat) + " " + String(opa);
       webSocket.broadcastTXT(dado);
