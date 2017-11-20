@@ -23,7 +23,7 @@ WebSocketsServer webSocket = WebSocketsServer(porta);
 // Pode ser necessário recalibrar conforme tensão máxima
 // aplicada nas portas analógicas.
 // Tensão máxima suportada: +/- 6.144V / resolução 1 bit: 0.1875mV
-static const int ads_max_valor = 3.30 / 0.1875 * 1000; 
+static const int ads_max_valor = 3.30 / 0.1875 * 1000;
 Adafruit_ADS1115 ads;
 
 bool tilt = false;
@@ -96,7 +96,7 @@ void setup() {
 
   Serial.printf("WebService disponível em ws://%s.local:%d ou ws://%s:%d\n",
                 nome, porta, WiFi.localIP().toString().c_str(), porta);
-  Serial.println("Aguardando conexões");
+  Serial.println("Aguardando conexões");  
 }
 
 uint16_t readADC(uint8_t channel, uint16_t max_valor) {
@@ -105,16 +105,16 @@ uint16_t readADC(uint8_t channel, uint16_t max_valor) {
   return map(constrain(value, 0, ads_max_valor), 0, ads_max_valor, 0, max_valor);
 }
 
-void loop() {
-  if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC) {
+void loop() { 
+#if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC)
   webSocket.loop();
-  }
-  
+#endif
+
   if (conectado) {
     uint64_t agora = millis();
 
-      uint16_t X = readADC(0, 1023);
-      uint16_t Y = readADC(1, 1023);
+    uint16_t X = readADC(0, 1023);
+    uint16_t Y = readADC(1, 1023);
     
     if (agora - ultimaAmostra > intervaloAmostra) {
       ultimaAmostra = agora;
@@ -126,10 +126,10 @@ void loop() {
       ciclosDemais++;
     }
 
-      String dado = String(tilt) + " " +
-                    String(X) + " " + String(Y) + " " +
-                    String(tam) + " " + String(sat) + " " + String(opa);
-      webSocket.broadcastTXT(dado);
+    String dado = String(tilt) + " " +
+                  String(X) + " " + String(Y) + " " +
+                  String(tam) + " " + String(sat) + " " + String(opa);
+    webSocket.broadcastTXT(dado);
 
     if (agora - ultimaMedidaAmostragem > 1000) {
       ultimaMedidaAmostragem = agora;
