@@ -80,7 +80,9 @@ void setup() {
 }
 
 uint16_t readADC(uint8_t channel, uint16_t max_valor) {
-  return map(constrain(ads.readADC_SingleEnded(channel), 0, ads_max_valor), 0, ads_max_valor, 0, max_valor);
+  // Cuidado! constraint é uma macro.
+  int16_t value = ads.readADC_SingleEnded(channel);
+  return map(constrain(value, 0, ads_max_valor), 0, ads_max_valor, 0, max_valor);
 }
 
 void loop() {
