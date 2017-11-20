@@ -54,6 +54,12 @@ void setup() {
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
 
+  Serial.print("Iniciando access point... ");
+  Serial.println(WiFi.softAP(nome) ? "ok" : "erro!");
+
+  Serial.print("Endereço IP do access point... ");
+  Serial.println(WiFi.softAPIP());  
+  
   Serial.print("Conectando a ");
   Serial.print(ssid);
   WiFi.begin(ssid, senha);
@@ -61,7 +67,7 @@ void setup() {
     Serial.print(".");
     delay(1000);
   }
-  Serial.println(" Ok");
+  Serial.println(" ok");
 
   if (MDNS.begin(nome)) {
     Serial.println("MDNS iniciado");
