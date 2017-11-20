@@ -26,8 +26,17 @@ WebSocketsServer webSocket = WebSocketsServer(porta);
 static const int ads_max_valor = 3.30 / 0.1875 * 1000; 
 Adafruit_ADS1115 ads;
 
+bool tilt = false;
+uint16_t tam;
+uint16_t sat;
+int opa;
+
 uint64_t ultimaAmostra = 0;
+uint64_t ultimaMedidaAmostragem = 0;
 bool conectado = false;
+
+int ciclosXY = 0;
+int ciclosDemais = 0;
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
@@ -39,6 +48,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       IPAddress ip = webSocket.remoteIP(num);
       Serial.printf("[%u] %s conectado\n", num, WiFi.localIP().toString().c_str());
       conectado = true;
+      ultimaMedidaAmostragem = millis();
       break;
   }
 }
@@ -76,6 +86,10 @@ void setup() {
     Serial.println("MDNS falhou");
   }
 
+  if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC) {
+    Serial.println("ATENÇÃO: Configure a biblioteca WebSockets para utilizar NETWORK_ESP8266_ASYNC");
+    Serial.println("ou a usabilidade poderá ficar comprometida!");
+  }
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   MDNS.addService("ws", "tcp", 81);
@@ -92,24 +106,38 @@ uint16_t readADC(uint8_t channel, uint16_t max_valor) {
 }
 
 void loop() {
+  if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC) {
   webSocket.loop();
+  }
+  
   if (conectado) {
     uint64_t agora = millis();
+
+      uint16_t X = readADC(0, 1023);
+      uint16_t Y = readADC(1, 1023);
+    
     if (agora - ultimaAmostra > intervaloAmostra) {
       ultimaAmostra = agora;
 
-      bool tilt = digitalRead(tilt_pin);
-      uint16_t X = readADC(0, 1023);
-      uint16_t Y = readADC(1, 1023);
-      uint16_t tam = readADC(2, 100);
-      uint16_t sat = readADC(3, 255);
-      int opa = map(analogRead(0), 0, 1023, 0, 255);
+      tilt = digitalRead(tilt_pin);
+      tam = readADC(2, 100);
+      sat = readADC(3, 255);
+      opa = map(analogRead(0), 0, 1023, 0, 255);
+      ciclosDemais++;
+    }
 
       String dado = String(tilt) + " " +
                     String(X) + " " + String(Y) + " " +
                     String(tam) + " " + String(sat) + " " + String(opa);
       webSocket.broadcastTXT(dado);
+
+    if (agora - ultimaMedidaAmostragem > 1000) {
+      ultimaMedidaAmostragem = agora;
+      Serial.printf("Amostragem XY/demais: %d/%d\n", ciclosXY, ciclosDemais);
+      ciclosXY = 0;
+      ciclosDemais = 0;
     }
+    ciclosXY++;
   }
 }
 
