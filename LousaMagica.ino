@@ -9,7 +9,7 @@
 static const uint8_t tilt_pin = D0;
 // ADS1115 CLK: D1
 // ADS1115 SDA: D2
-// Potenciômetro Opacidade: A0
+// Potenciômetro Saturação: A0
 
 // Configurações
 static const char ssid[] = "seu-ssid";
@@ -114,15 +114,15 @@ void loop() {
     uint64_t agora = millis();
 
     uint16_t X = readADC(0, 1023);
-    uint16_t Y = readADC(1, 1023);
+    uint16_t Y = readADC(3, 1023);
     
     if (agora - ultimaAmostra > intervaloAmostra) {
       ultimaAmostra = agora;
 
       tilt = digitalRead(tilt_pin);
       tam = readADC(2, 100);
-      sat = readADC(3, 255);
-      opa = map(analogRead(0), 0, 1023, 0, 255);
+      opa = readADC(1, 255);
+      sat = map(analogRead(0), 0, 973, 0, 255);
       ciclosDemais++;
     }
 
