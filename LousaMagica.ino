@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <WebSocketsServer.h>
+#include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <Hash.h>
 #include <Wire.h>
@@ -15,10 +16,12 @@ static const uint8_t tilt_pin = D0;
 static const char ssid[] = "seu-ssid";
 static const char senha[] = "sua-senha";
 static const char nome[] = "lousa-magica";
-static const int porta = 81;
+static const int websocket_porta = 81;
+static const int webserver_porta = 80;
 static const unsigned int intervaloAmostra = 50;  // Em milisegundos
 
-WebSocketsServer webSocket = WebSocketsServer(porta);
+WebSocketsServer webSocket = WebSocketsServer(websocket_porta);
+ESP8266WebServer server(webserver_porta);
 
 // Pode ser necessário recalibrar conforme tensão máxima
 // aplicada nas portas analógicas.
@@ -37,6 +40,59 @@ bool conectado = false;
 
 int ciclosXY = 0;
 int ciclosDemais = 0;
+
+
+static const char PROGMEM INDEX_HTML[] = R"rawliteral(
+<html>
+<head>
+<meta charset="UTF-8">
+
+<style> body {padding: 0; margin: 0;} </style>
+<script>
+
+var tilt = true;
+var X = 0;
+var Y = 0;
+var tam = 20;  // Tamanho
+var sat = 255; // Saturação
+var opa = 1;   // Opacidade/Alpha
+
+function setup() {
+  createCanvas(1024, 1024);
+  background(0);
+  colorMode(HSB);  // para usar HSB em vez de RGB!
+  frameRate(30);
+  noStroke();
+  
+  var connection = new WebSocket('ws://' + window.location.host + ':81/', ['arduino']);
+  connection.onmessage = function (msg) {
+    valor = msg.data.split(' ').map(Number);
+    console.log(msg.data);
+    tilt = valor[0] == 1;
+    X = valor[1];
+    Y = valor[2];
+    tam = valor[3];
+    sat = valor[4];
+    opa = valor[5];
+  };
+}
+
+function draw() {
+  if (tilt) {
+    background(0);  // limpa o canvas com preto
+  }
+  else {
+    var F = frameCount; 
+    // Note modo HSB no setup! (Matiz, Saturação, Brilho, Alfa)
+    fill(F % 255, sat, 255, opa/255);
+    ellipse(X, Y, tam, tam);
+  }
+}
+</script>
+<script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.16/p5.min.js"></script>
+</head>
+</html>
+)rawliteral";
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
@@ -92,10 +148,19 @@ void setup() {
   }
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
-  MDNS.addService("ws", "tcp", 81);
-
+  MDNS.addService("ws", "tcp", websocket_porta);
   Serial.printf("WebService disponível em ws://%s.local:%d ou ws://%s:%d\n",
-                nome, porta, WiFi.localIP().toString().c_str(), porta);
+                nome, websocket_porta, WiFi.localIP().toString().c_str(), websocket_porta);
+
+  server.on("/", HTTP_GET, []() {
+    Serial.println("server: /");
+    server.send(200, "text/html", INDEX_HTML);
+  });
+  server.begin();
+  MDNS.addService("http", "tcp", webserver_porta);
+  Serial.printf("Serviço HTTP disponível em http://%s.local:%d ou http://%s:%d\n",
+                nome, webserver_porta, WiFi.localIP().toString().c_str(), webserver_porta);
+
   Serial.println("Aguardando conexões");  
 }
 
@@ -109,6 +174,7 @@ void loop() {
 #if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC)
   webSocket.loop();
 #endif
+  server.handleClient();
 
   if (conectado) {
     uint64_t agora = millis();
