@@ -4,6 +4,7 @@
 #include <ESP8266mDNS.h>
 #include <Hash.h>
 #include <Wire.h>
+#include <FS.h>
 #include <Adafruit_ADS1015.h>
 
 // Conexões no NodeMCU/WeMos
@@ -41,58 +42,34 @@ bool conectado = false;
 int ciclosXY = 0;
 int ciclosDemais = 0;
 
-
-static const char PROGMEM INDEX_HTML[] = R"rawliteral(
-<html>
-<head>
-<meta charset="UTF-8">
-
-<style> body {padding: 0; margin: 0;} </style>
-<script>
-
-var tilt = true;
-var X = 0;
-var Y = 0;
-var tam = 20;  // Tamanho
-var sat = 255; // Saturação
-var opa = 1;   // Opacidade/Alpha
-
-function setup() {
-  createCanvas(1024, 1024);
-  background(0);
-  colorMode(HSB);  // para usar HSB em vez de RGB!
-  frameRate(30);
-  noStroke();
-  
-  var connection = new WebSocket('ws://' + window.location.host + ':81/', ['arduino']);
-  connection.onmessage = function (msg) {
-    valor = msg.data.split(' ').map(Number);
-    console.log(msg.data);
-    tilt = valor[0] == 1;
-    X = valor[1];
-    Y = valor[2];
-    tam = valor[3];
-    sat = valor[4];
-    opa = valor[5];
-  };
+String getContentType(String filename){
+  if(filename.endsWith(".html")) return "text/html";
+  else if(filename.endsWith(".ico")) return "image/x-icon";
+  else if(filename.endsWith(".gz")) return "application/x-gzip";
+  return "text/plain";
 }
 
-function draw() {
-  if (tilt) {
-    background(0);  // limpa o canvas com preto
+void handleFileRead(String path) {
+  Serial.println("handleFileRead: " + path);
+  if (path.endsWith("/")) {
+    path += "index.html";
+  }
+  String contentType = getContentType(path);
+  String pathWithGz = path + ".gz";
+  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
+    if (SPIFFS.exists(pathWithGz)) {
+      path += ".gz";
+    }
+    File file = SPIFFS.open(path, "r");
+    // Slow performance of FSBrowser on Chrome and Firefox
+    // https://github.com/esp8266/Arduino/issues/1027
+    size_t sent = server.streamFile(file, contentType);
+    file.close();
   }
   else {
-    var F = frameCount; 
-    // Note modo HSB no setup! (Matiz, Saturação, Brilho, Alfa)
-    fill(F % 255, sat, 255, opa/255);
-    ellipse(X, Y, tam, tam);
+    server.send(404, "text/plain", "FileNotFound");
   }
 }
-</script>
-<script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.16/p5.min.js"></script>
-</head>
-</html>
-)rawliteral";
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
@@ -116,6 +93,10 @@ void setup() {
   Serial.println("Iniciando Lousa Mágica");
 
   pinMode(tilt_pin, INPUT);
+
+  Serial.println("Abrindo sistema de arquivos... ");
+  SPIFFS.begin();
+  Serial.print("ok");
 
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
@@ -146,22 +127,23 @@ void setup() {
     Serial.println("ATENÇÃO: Configure a biblioteca WebSockets para utilizar NETWORK_ESP8266_ASYNC");
     Serial.println("ou a usabilidade poderá ficar comprometida!");
   }
-  webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+  webSocket.begin();
   MDNS.addService("ws", "tcp", websocket_porta);
   Serial.printf("WebService disponível em ws://%s.local:%d ou ws://%s:%d\n",
                 nome, websocket_porta, WiFi.localIP().toString().c_str(), websocket_porta);
-
-  server.on("/", HTTP_GET, []() {
-    Serial.println("server: /");
-    server.send(200, "text/html", INDEX_HTML);
-  });
+                
+  // Para não precisar ficar mapeando cada um dos arquivos.
+  server.onNotFound([](){
+    Serial.println(server.uri());
+    handleFileRead(server.uri());
+  });  
   server.begin();
   MDNS.addService("http", "tcp", webserver_porta);
   Serial.printf("Serviço HTTP disponível em http://%s.local:%d ou http://%s:%d\n",
                 nome, webserver_porta, WiFi.localIP().toString().c_str(), webserver_porta);
 
-  Serial.println("Aguardando conexões");  
+  Serial.println("Aguardando conexões");
 }
 
 uint16_t readADC(uint8_t channel, uint16_t max_valor) {
