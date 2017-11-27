@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <WebSocketsServer.h>
 #include <ESP8266WebServer.h>
+#include <DNSServer.h>
 #include <ESP8266mDNS.h>
 #include <Hash.h>
 #include <Wire.h>
@@ -20,7 +21,10 @@ static const char nome[] = "lousa-magica";
 static const int websocket_porta = 81;
 static const int webserver_porta = 80;
 static const unsigned int intervaloAmostra = 50;  // Em milisegundos
+unsigned int tentativasConexao = 0;
+static const unsigned int maxTentativasConexao = 15;
 
+DNSServer dnsServer;
 WebSocketsServer webSocket = WebSocketsServer(websocket_porta);
 ESP8266WebServer server(webserver_porta);
 
@@ -50,7 +54,6 @@ String getContentType(String filename){
 }
 
 void handleFileRead(String path) {
-  Serial.println("handleFileRead: " + path);
   if (path.endsWith("/")) {
     path += "index.html";
   }
@@ -94,9 +97,9 @@ void setup() {
 
   pinMode(tilt_pin, INPUT);
 
-  Serial.println("Abrindo sistema de arquivos... ");
+  Serial.print("Abrindo sistema de arquivos... ");
   SPIFFS.begin();
-  Serial.print("ok");
+  Serial.println("ok");
 
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
@@ -105,16 +108,28 @@ void setup() {
   Serial.println(WiFi.softAP(nome) ? "ok" : "erro!");
 
   Serial.print("Endereço IP do access point... ");
-  Serial.println(WiFi.softAPIP());  
-  
+  Serial.println(WiFi.softAPIP());
+
+  dnsServer.start(53, nome + String(".local"), WiFi.softAPIP());
+
   Serial.print("Conectando a ");
   Serial.print(ssid);
   WiFi.begin(ssid, senha);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(1000);
+    tentativasConexao++;
+    if (tentativasConexao > maxTentativasConexao) {
+      WiFi.mode(WIFI_AP);
+      break;
+    }
   }
-  Serial.println(" ok");
+  if (tentativasConexao <= maxTentativasConexao) {
+    Serial.println(" ok");
+  }
+  else {
+    Serial.println(" erro!");
+  }
 
   if (MDNS.begin(nome)) {
     Serial.println("MDNS iniciado");
@@ -130,8 +145,7 @@ void setup() {
   webSocket.onEvent(webSocketEvent);
   webSocket.begin();
   MDNS.addService("ws", "tcp", websocket_porta);
-  Serial.printf("WebService disponível em ws://%s.local:%d ou ws://%s:%d\n",
-                nome, websocket_porta, WiFi.localIP().toString().c_str(), websocket_porta);
+  Serial.printf("WebService disponível em ws://%s.local:%d\n", nome, websocket_porta);
                 
   // Para não precisar ficar mapeando cada um dos arquivos.
   server.onNotFound([](){
@@ -140,8 +154,7 @@ void setup() {
   });  
   server.begin();
   MDNS.addService("http", "tcp", webserver_porta);
-  Serial.printf("Serviço HTTP disponível em http://%s.local:%d ou http://%s:%d\n",
-                nome, webserver_porta, WiFi.localIP().toString().c_str(), webserver_porta);
+  Serial.printf("Serviço HTTP disponível em http://%s.local:%d\n", nome, webserver_porta);
 
   Serial.println("Aguardando conexões");
 }
@@ -156,6 +169,7 @@ void loop() {
 #if (WEBSOCKETS_NETWORK_TYPE != NETWORK_ESP8266_ASYNC)
   webSocket.loop();
 #endif
+  dnsServer.processNextRequest();
   server.handleClient();
 
   if (conectado) {
