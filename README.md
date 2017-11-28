@@ -7,6 +7,8 @@ Para utilizá-lo, você só precisa conectar-se a rede WiFi chamada lousa-magica
 Após a conexão acesse o endereço http://lousa-magica.local e comece a desenhar!
 
 ### Exemplos
+![Transparência](imagens/01.png)
+![Colorido](imagens/02.png)
 
 ### Lista de materiais
 * 1 microcontrolador ESP8266 (NodeMCU ou WeMos)
