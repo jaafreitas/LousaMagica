@@ -33,6 +33,11 @@ Após a conexão acesse o endereço http://lousa-magica.local e comece a desenha
 6. Fixe o sensor de inclinação na caixa de montagem e conecte o pino de sinal ao pino D0 do ESP8266
 7. Faça a ligação dos terminais negativos e positivos dos potenciômetros, conversor analógico digital e sensor de inclinação ao ESP8266;
 
+![Potênciômetros](imagens/montagem_01.jpg)
+![Potênciômetros](imagens/montagem_02.jpg)
+![Fiação](imagens/montagem_03.jpg)
+![Montagem](imagens/montagem_03.jpg)
+
 ### Referências
 * [ESP8266](https://github.com/esp8266/Arduino)
 * [ADS1115](https://github.com/adafruit/Adafruit_ADS1X15)
