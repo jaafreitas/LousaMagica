@@ -38,6 +38,7 @@ bool tilt = false;
 uint16_t tam;
 uint16_t sat;
 int opa;
+uint8_t mat = 0;
 
 uint64_t ultimaAmostra = 0;
 uint64_t ultimaMedidaAmostragem = 0;
@@ -175,6 +176,11 @@ void loop() {
   if (conectado) {
     uint64_t agora = millis();
 
+    mat++;
+    if (mat > 255) {
+      mat = 0;
+    }
+    
     uint16_t X = readADC(0, 1023);
     uint16_t Y = readADC(3, 1023);
     
@@ -189,8 +195,8 @@ void loop() {
     }
 
     String dado = String(tilt) + " " +
-                  String(X) + " " + String(Y) + " " +
-                  String(tam) + " " + String(sat) + " " + String(opa);
+                  String(X) + " " + String(Y) + " " + String(tam) + " " +
+                  String(mat) + " " + String(sat) + " " + String(opa);
     webSocket.broadcastTXT(dado);
 
     if (agora - ultimaMedidaAmostragem > 1000) {

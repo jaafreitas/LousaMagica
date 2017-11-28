@@ -9,6 +9,7 @@ var tilt = true;
 var X = 0;
 var Y = 0;
 var tam = 20;   // Tamanho
+var mat =0;     // Matriz
 var sat = 255;  // Saturação
 var opa = 255;  // Opacidade/Alpha
 
@@ -19,16 +20,17 @@ function setup() {
   frameRate(30);
   noStroke();
 
-  var connection = new WebSocket('ws://' + window.location.host + ':81/', ['arduino']);
+  var connection = new WebSocket('ws://lousa-magica.local:81/', ['arduino']);
   connection.onmessage = function (msg) {
     valor = msg.data.split(' ').map(Number);
-    console.log(msg.data);
+    // console.log(msg.data);
     tilt = valor[0] == 1;
     X = valor[1];
     Y = valor[2];
     tam = valor[3];
-    sat = valor[4];
-    opa = valor[5];
+    mat = valor[4];
+    sat = valor[5];
+    opa = valor[6];
   };
 }
 
@@ -37,9 +39,9 @@ function draw() {
     background(0);  // limpa o canvas com preto
   }
   else {
-    var F = frameCount;
     // Note modo HSB no setup! (Matiz, Saturação, Brilho, Alfa)
-    fill(F % 255, sat, 255, opa/255);
+    // Por que tem que multiplicar por 1.4?
+    fill(mat * 1.4, sat, 255, opa/255);
     ellipse(X, Y, tam, tam);
   }
 }

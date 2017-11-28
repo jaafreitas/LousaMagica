@@ -6,6 +6,7 @@ Boolean tilt = true;
 int X = 0;
 int Y = 0;
 int tam = 20;   // Tamanho
+int mat = 0;    // Matriz
 int sat = 255;  // Saturação
 int opa = 255;  // Opacidade/Alpha
   
@@ -23,9 +24,8 @@ void draw(){
     background(0);  // limpa o canvas com preto
   }
   else {
-    float F = frameCount;
     // Note modo HSB no setup! (Matiz, Saturação, Brilho, Alfa)
-    fill(F % 255, sat, 255, opa);
+    fill(mat, sat, 255, opa);
     ellipse(X, Y, tam, tam);
   }
 }
@@ -36,6 +36,7 @@ void webSocketEvent(String dado){
   X = valor[1];
   Y = valor[2];
   tam = valor[3];
-  sat = valor[4];
-  opa = valor[5];
+  mat = valor[4];
+  sat = valor[5];
+  opa = valor[6];
 }
