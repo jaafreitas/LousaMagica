@@ -8,6 +8,8 @@ Após a conexão acesse o endereço http://lousa-magica.local e comece a desenha
 
 ### Exemplos
 ![Transparência](imagens/01.png)
+
+
 ![Colorido](imagens/02.png)
 
 ### Lista de materiais
@@ -32,6 +34,7 @@ Após a conexão acesse o endereço http://lousa-magica.local e comece a desenha
 5. Conecte 4 potenciômetros ao conversor analógico digital e 1 potenciômetro a porta analógica A0 do ESP8266;
 6. Fixe o sensor de inclinação na caixa de montagem e conecte o pino de sinal ao pino D0 do ESP8266
 7. Faça a ligação dos terminais negativos e positivos dos potenciômetros, conversor analógico digital e sensor de inclinação ao ESP8266;
+8. Faça o clone [deste repositório](https://github.com/jaafreitas/LousaMagica) e atualize o ESP8266 a partir da IDE do Arduino.
 
 ![Potênciômetros](imagens/montagem_01.jpg)
 ![Potênciômetros](imagens/montagem_02.jpg)
