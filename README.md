@@ -39,7 +39,7 @@ Após a conexão acesse o endereço http://lousa-magica.local e comece a desenha
 ![Potênciômetros](imagens/montagem_01.jpg)
 ![Potênciômetros](imagens/montagem_02.jpg)
 ![Fiação](imagens/montagem_03.jpg)
-![Montagem](imagens/montagem_03.jpg)
+![Montagem](imagens/montagem_04.jpg)
 
 ### Referências
 * [ESP8266](https://github.com/esp8266/Arduino)
