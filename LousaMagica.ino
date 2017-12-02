@@ -38,7 +38,7 @@ bool tilt = false;
 uint16_t tam;
 uint16_t sat;
 int opa;
-uint8_t mat = 0;
+uint16_t mat = 0;
 
 uint64_t ultimaAmostra = 0;
 uint64_t ultimaMedidaAmostragem = 0;
@@ -177,7 +177,7 @@ void loop() {
     uint64_t agora = millis();
 
     mat++;
-    if (mat > 255) {
+    if (mat > 360) {
       mat = 0;
     }
     
@@ -189,8 +189,8 @@ void loop() {
 
       tilt = digitalRead(tilt_pin);
       tam = readADC(2, 100);
-      opa = readADC(1, 255);
-      sat = map(analogRead(0), 0, 973, 0, 255);
+      opa = readADC(1, 100);
+      sat = map(analogRead(0), 0, 973, 0, 100);
       ciclosDemais++;
     }
 
