@@ -105,10 +105,11 @@ void setup() {
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
 
+  WiFi.mode(WIFI_AP_STA);
   Serial.print("Iniciando access point... ");
   Serial.println(WiFi.softAP(nome) ? "ok" : "erro!");
 
-  Serial.print("Endereço IP do access point... ");
+  Serial.print("Endereço IP do access point: ");
   Serial.println(WiFi.softAPIP());
 
   dnsServer.start(53, nome + String(".local"), WiFi.softAPIP());
@@ -121,14 +122,17 @@ void setup() {
     delay(1000);
     tentativasConexao++;
     if (tentativasConexao > maxTentativasConexao) {
-      WiFi.mode(WIFI_AP);
       break;
     }
   }
+  
   if (tentativasConexao <= maxTentativasConexao) {
     Serial.println(" ok");
+    Serial.print("Endereço IP obtivo: ");
+    Serial.println(WiFi.localIP());
   }
   else {
+    WiFi.mode(WIFI_AP);
     Serial.println(" erro!");
   }
 
