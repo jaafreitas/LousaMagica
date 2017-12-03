@@ -175,12 +175,6 @@ void loop() {
 
   if (conectado) {
     uint64_t agora = millis();
-
-    mat++;
-    if (mat > 360) {
-      mat = 0;
-    }
-    
     uint16_t X = readADC(0, 1023);
     uint16_t Y = readADC(3, 1023);
     
@@ -199,6 +193,11 @@ void loop() {
                   String(mat) + " " + String(sat) + " " + String(opa);
     webSocket.broadcastTXT(dado);
 
+    mat++;
+    if (mat >= 360) {
+      mat = 0;
+    }
+    
     if (agora - ultimaMedidaAmostragem > 1000) {
       ultimaMedidaAmostragem = agora;
       Serial.printf("Amostragem XY/demais: %d/%d\n", ciclosXY, ciclosDemais);
