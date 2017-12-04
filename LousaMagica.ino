@@ -67,7 +67,9 @@ void handleFileRead(String path) {
     File file = SPIFFS.open(path, "r");
     // Slow performance of FSBrowser on Chrome and Firefox
     // https://github.com/esp8266/Arduino/issues/1027
-    size_t sent = server.streamFile(file, contentType);
+    if (server.streamFile(file, contentType) != file.size()) {
+      Serial.println("[http] falha na transferência do arquivo");
+    }
     file.close();
   }
   else {
@@ -78,12 +80,12 @@ void handleFileRead(String path) {
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED:
-      Serial.printf("[%u] desconectado\n", num);
+      Serial.printf("[socket] [%u] desconectado\n", num);
       conectado = false;
       break;
     case WStype_CONNECTED:
       IPAddress ip = webSocket.remoteIP(num);
-      Serial.printf("[%u] %s conectado\n", num, WiFi.localIP().toString().c_str());
+      Serial.printf("[socket] [%u] %s conectado\n", num, ip.toString().c_str());
       conectado = true;
       ultimaMedidaAmostragem = millis();
       break;
@@ -105,8 +107,8 @@ void setup() {
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
 
-  WiFi.mode(WIFI_AP_STA);
   Serial.print("Iniciando access point... ");
+  WiFi.mode(WIFI_AP_STA);
   Serial.println(WiFi.softAP(nome) ? "ok" : "erro!");
 
   Serial.print("Endereço IP do access point: ");
@@ -154,8 +156,11 @@ void setup() {
                 
   // Para não precisar ficar mapeando cada um dos arquivos.
   server.onNotFound([](){
-    Serial.println(server.uri());
+    uint64_t agora = millis();
+    Serial.print("[http] ");
+    Serial.print(server.uri()); Serial.print(" -> ");
     handleFileRead(server.uri());
+    Serial.printf("%d", millis() - agora); Serial.println(" ms");
   });  
   server.begin();
   MDNS.addService("http", "tcp", webserver_porta);
