@@ -9,7 +9,7 @@ public class Ponto {
   int X = 0;
   int Y = 0;
   int tam = 20;   // Tamanho
-  int mat = 0;    // Matriz
+  int mat = 0;    // Matiz
   int sat = 100;  // Saturação
   int bri = 100;  // Brilho
   int opa = 100;  // Opacidade/Alpha
